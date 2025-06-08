@@ -32,12 +32,3 @@ def challenge_buttons(challenger, challenged):
             ]
         ]
     )
-
-def play_round():
-    """
-    Plays one round of the dice game by rolling a dice.
-    
-    Returns:
-        int: The result of the dice roll for this round.
-    """
-    return roll_dice()
