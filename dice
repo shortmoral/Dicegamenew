@@ -1,0 +1,100 @@
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+def get_start_buttons():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("➕ Add Bot to Chat", url="https://t.me/Dice_inchatbot?startgroup=true")],
+        [
+            InlineKeyboardButton("💬 Support Chat", url="https://t.me/NazkiSupport"),
+            InlineKeyboardButton("📢 Support Channel", url="https://t.me/NazkiUpdates")
+        ]
+    ])
+
+def get_challenge_buttons(challenger, opponent):
+    return InlineKeyboardMarkup([
+        [
+            InlineKeyboardButton("✅ Confirm", callback_data=f"confirm:{challenger}:{opponent}"),
+            InlineKeyboardButton("❌ Cancel", callback_data=f"cancel:{challenger}:{opponent}")
+        ]
+    ])
+import random
+
+def roll_dice():
+    return random.randint(1, 6)
+
+def calculate_round_winner(rolls):
+    return max(rolls, key=rolls.get)
+
+def calculate_game_winner(scores):
+    return max(scores, key=scores.get)
+from pyrogram import filters
+from bot.buttons import get_start_buttons, get_challenge_buttons
+from bot.game_logic import roll_dice
+
+active_challenges = {}
+ongoing_games = {}
+
+async def start_command(client, message):
+    rules = (
+        "🎲 **Brief Rules of Dice Game**\n\n"
+        "1️⃣ **Game Start**: Each player has 3 dice. Everyone rolls their dice and hides them.\n"
+        "2️⃣ **Bidding**: Players take turns making bids.\n"
+        "3️⃣ **Challenge**: If a bid is challenged, all dice are revealed to determine the winner.\n"
+        "4️⃣ **Losing Dice**: The loser loses a die."
+    )
+    await message.reply(rules, reply_markup=get_start_buttons())
+
+async def help_command(client, message):
+    help_text = (
+        "🎲 **How to Play**\n\n"
+        "Use `/dice` to roll dice.\n"
+        "Examples:\n"
+        "`/dice 5.50` - Bet $5.50\n"
+        "`/dice half` - Bet half your balance\n"
+        "`/dice all` - Go all-in."
+    )
+    await message.reply(help_text)
+
+async def challenge_command(client, message):
+    if not message.reply_to_message:
+        await message.reply("❌ Reply to a user's message to challenge them!")
+        return
+
+    challenger = message.from_user.id
+    opponent = message.reply_to_message.from_user.id
+    active_challenges[(challenger, opponent)] = {"round": 1, "scores": {challenger: 0, opponent: 0}}
+
+    await message.reply(
+        f"🎮 {message.from_user.mention} challenged {message.reply_to_message.from_user.mention} to a dice game!",
+        reply_markup=get_challenge_buttons(challenger, opponent)
+    )
+
+async def callback_query_handler(client, callback_query):
+    data = callback_query.data.split(":")
+    action, challenger, opponent = data[0], int(data[1]), int(data[2])
+    user_id = callback_query.from_user.id
+
+    if (challenger, opponent) not in active_challenges:
+        await callback_query.answer("Challenge not found!", show_alert=True)
+        return
+
+    if action == "cancel":
+        del active_challenges[(challenger, opponent)]
+        await callback_query.message.edit_text("❌ Challenge canceled.")
+    elif action == "confirm":
+        ongoing_games[(challenger, opponent)] = {"rounds": 3, "current_round": 1, "scores": {challenger: 0, opponent: 0}}
+        await callback_query.message.edit_text(
+            f"🎲 Challenge confirmed! {callback_query.from_user.mention}, start by rolling the dice with `/roll`!"
+        )
+from pyrogram import Client
+from config import API_ID, API_HASH, BOT_TOKEN
+from bot.handlers import start_command, help_command, challenge_command, callback_query_handler
+
+app = Client("dice_game_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
+
+app.add_handler(filters.command("start")(start_command))
+app.add_handler(filters.command("help")(help_command))
+app.add_handler(filters.command("challenge")(challenge_command))
+app.add_handler(filters.callback_query()(callback_query_handler))
+
+if __name__ == "__main__":
+    app.run()
