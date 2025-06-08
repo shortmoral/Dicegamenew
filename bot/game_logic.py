@@ -1,4 +1,3 @@
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 import random
 
 def roll_dice():
@@ -20,6 +19,8 @@ def challenge_buttons(challenger, challenged):
     Returns:
         InlineKeyboardMarkup: Inline keyboard with confirm and cancel buttons.
     """
+    from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
     return InlineKeyboardMarkup(
         [
             [
@@ -32,3 +33,12 @@ def challenge_buttons(challenger, challenged):
             ]
         ]
     )
+
+def play_round():
+    """
+    Plays one round of the dice game by rolling a dice.
+    
+    Returns:
+        int: The result of the dice roll for this round.
+    """
+    return roll_dice()
