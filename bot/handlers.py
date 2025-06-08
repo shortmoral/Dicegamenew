@@ -1,7 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from bot.game_logic import challenge_buttons, play_round
-
 # Dictionary to keep track of active challenges
 active_challenges = {}
 
